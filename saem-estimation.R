@@ -363,7 +363,7 @@ print.SAEM_ZIBR_result<-function(l)
 #  sim_seed=332)
 #
 
-#data.zibr<-data.frame(ID=subject_ind,
+#data.zibr<-data.frame(ID=data.sim$subject_ind,
 #                      Y=data.sim$Y,
 #                      X=as.vector(data.sim$X),
 #                      Z=data.sim$Z)
