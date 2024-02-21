@@ -91,7 +91,7 @@ llis.zibr<-function(MU,G,V,yobs,idg0,ideq0,xcov,zcov,nxcov,nzcov,id,psi.mean,psi
 ##                             MAIN FUNCTION
 # saem_zibr: estimate the parameters of the ZIBR model with the SAEM algorithm
 
-saem_zibr<-function(Y,X=NULL,Z=NULL,id,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fix=NULL)
+saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fix=NULL)
 {
   require(MASS)
   require(boot)
@@ -128,9 +128,10 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,id,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fi
   naleat<-length(ind.psi.aleat)
   nal.a<-sum(ind.a.aleat)
   nal.b<-sum(ind.b.aleat)
+  id<-as.numeric(factor(index, levels=unique(index)))
   id1<-rep(id,ncad)
   id2<-id1+(nind*(rep(1:ncad,each=ntot)-1))
-  
+    
   graph_str<-NULL
 
   MU<-c(a0,b0)
@@ -350,5 +351,22 @@ print.SAEM_ZIBR_result<-function(l)
 }
 
 ## EXAMPLES
+
+#data.sim <- simulate_zero_inflated_beta_random_effect_data(
+#  subject_n=100,time_n=5,
+#  X = as.matrix(c(rep(0,50*5),rep(1,50*5))),
+#  Z = as.matrix(c(rep(0,50*5),rep(1,50*5))),
+#  alpha = as.matrix(c(-0.5,0.5)),
+#  beta = as.matrix(c(-0.5,0.5)),
+#  s1 = 0.43,s2 = 0.76,
+#  v = 17.2,
+#  sim_seed=332)
+#
+
+#data.zibr<-data.frame(ID=subject_ind,
+#                      Y=data.sim$Y,
+#                      X=as.vector(data.sim$X),
+#                      Z=data.sim$Z)
+#            
 # RES1<-saem_zibr(data.zibr$Y,data.zibr$X,data.zibr$Z,data.zibr$ID,15,c(-0.3,0.5),c(-0.2,0.8),ncad=10,232,500)
 # RES2<-saem_zibr(data.zibr$Y,data.zibr$X,data.zibr$Z,data.zibr$ID,15,c(-0.4,0.9),c(-0.2,0.8),ncad=10,232,500,a.fix=c(0,0),b.fix = c(0,0))
