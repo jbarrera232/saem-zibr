@@ -8,13 +8,13 @@ explain the presence or not of a certain bacterial taxon and, in case of presenc
 Its defintion is as follows: 
 
 Let us define $Y_{it}$ as the relative abundance of a bacterial taxon in the individual $i$ at time $t$, $1\leq i\leq N$, $1\leq t\leq T_i$. The model assumes that
-$$ 
+```math
 Y_{it} \leadsto
     \begin{cases}
     0&\mbox{with prob. } 1-p_{it},\\
     Beta(u_{it}\phi,(1-u_{it})\phi)&\mbox{with prob. } p_{it}.\\
     \end{cases}    
-$$
+```
 
 with $0 \leq Y_{it} < 1$, $\phi>0$ and $0 < u_{it}, p_{it}<1$. These two last components are determined by
 
