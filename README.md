@@ -15,13 +15,13 @@ $$Y_{it}\leadsto
     \end{cases}    
 $$
 
-with $0\leq Y_{it}<1$, $\phi>0$ and $0<u_{it},p_{it}<1$. These two last components are determined by
+with $0 \leq Y_{it} < 1$, $\phi>0$ and $0 < u_{it}, p_{it}<1$. These two last components are determined by
 
 $$\begin{split}
     \log{\left(\frac{p_{it}}{1-p_{it}}\right)}&=a_i+X_{it}^T\alpha,\\
     \log{\left(\frac{u_{it}}{1-u_{it}}\right)}&=b_i+Z_{it}^T\beta,    
 \end{split}$$
 
-where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\hspace*{0.5cm}b_i\leadsto N(b,\sigma^2_2).$$
+where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\;b_i\leadsto N(b,\sigma^2_2).$$
 
 
