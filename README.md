@@ -8,7 +8,8 @@ explain the presence or not of a certain bacterial taxon and, in case of presenc
 Its defintion is as follows: 
 
 Let us define $Y_{it}$ as the relative abundance of a bacterial taxon in the individual $i$ at time $t$, $1\leq i\leq N$, $1\leq t\leq T_i$. The model assumes that
-$$Y_{it}\leadsto
+$$ 
+Y_{it} \leadsto
     \begin{cases}
     0&\mbox{with prob. } 1-p_{it},\\
     Beta(u_{it}\phi,(1-u_{it})\phi)&\mbox{with prob. } p_{it}.\\
@@ -22,6 +23,6 @@ $$\begin{split}
     \log{\left(\frac{u_{it}}{1-u_{it}}\right)}&=b_i+Z_{it}^T\beta,    
 \end{split}$$
 
-where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\;b_i\leadsto N(b,\sigma^2_2).$$
+where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\ b_i\leadsto N(b,\sigma^2_2).$$
 
 
