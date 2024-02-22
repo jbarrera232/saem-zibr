@@ -5,14 +5,13 @@
 The zero-inflated beta regression (ZIBR) model was proposed by Chen and Li (2016), a two-stage mixed effects model that allows the inclusion of covariates both to
 explain the presence or not of a certain bacterial taxon and, in case of presence, the influence of these covariates in the relative abundance of the taxon.
 
-Its defintion is as follows: 
+Its defintion is as follows: let us define $Y_{it}$ as the relative abundance of a bacterial taxon in the individual $i$ at time $t$, $1\leq i\leq N$, $1\leq t\leq T_i$. The model assumes that
 
-Let us define $Y_{it}$ as the relative abundance of a bacterial taxon in the individual $i$ at time $t$, $1\leq i\leq N$, $1\leq t\leq T_i$. The model assumes that
 ```math
 Y_{it} \leadsto
     \begin{cases}
     0&\mbox{with prob. } 1-p_{it},\\
-    Beta(u_{it}\phi,(1-u_{it})\phi)&\mbox{with prob. } p_{it}.\\
+    Beta(u_{it}\phi,(1-u_{it})\phi)&\mbox{with prob. } p_{it}.
     \end{cases}    
 ```
 
@@ -24,5 +23,19 @@ $$\begin{split}
 \end{split}$$
 
 where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\ b_i\leadsto N(b,\sigma^2_2).$$
+
+The main difference that we address is the estimation method. Chen and Li use Gauss-Hermite quadrature to approximate the log-likelihood and optimize to find the estimators, and is implemented in the package [**ZIBR**](https://github.com/PennChopMicrobiomeProgram/ZIBR). We propose the usage of the *Stochastic Approximation Expectation Maximization (SAEM) algorithm* (Delyon et al., 1999) that is a useful tool in other complex mixed effects models.
+
+## Contents
+
+This repository has two files: **saem-zibr.R**, which contains the syntaxis for auxiliar functions and the main function *saem_zibr* that carries out the SAEM estimation of the ZIBR model given the data in a specific format; and **saem-results.R**, which shows the results of the application of the SAEM estimation in two real datasets from Lee et al. (2015) and Romero et al. (2014) that will be published in a future paper.
+
+## Usage of saem_zibr
+
+```r
+saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fix=NULL)
+```
+
+
 
 
