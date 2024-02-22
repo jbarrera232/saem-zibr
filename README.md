@@ -36,6 +36,34 @@ This repository has two files: **saem-zibr.R**, which contains the syntaxis for 
 saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fix=NULL)
 ```
 
+- *Y:* a vector that contains the relative abundance of a bacterial taxon.
+- *X:* a matrix or data frame that contains the covariates defined for the logistic part of the model $p_{it}$. Must have the same number of rows as Y. Default is NULL, which assumes only a random intercept in the corresponding part of the model.
+- *Z:* a matrix or data frame that contains the covariates defined for the beta part of the model $u_{it}$. Must have the same number of rows as Y. Default is NULL, which assumes only a random intercept in the corresponding part of the model.
+- *index:* a vector with labels that identify the different individuals in the data. Must have the same number of rows as Y, X and Z. Can be factor, character or integer.
+-  *v0:* initial value for $\phi$. Must be a number.
+-  *a0:* initial value for the coefficient vector associated to $p_{it}$. If X is NULL, is a number. If X has $m$ columns, a0 must have $m+1$ components, and the first is for the intercept.
+-  *b0:* initial value for the coefficient vector associated to $u_{it}$. If Z is NULL, is a number. If Z has $m$ columns, b0 must have $m+1$ components, and the first is for the intercept.
+-  *seed:* for the replicability.
+-  *iter:* number of iterations for the SAEM algorithm.
+-  *ncad:* number of Markov chains to use in the SAEM algorithm. Default is 5.
+-  *a.fix:*  vector of ones and zeros, same length as a0. Indicates if the effect associated to a column in X is random (0) or fixed (1). Default is NULL, which takes only a random intercept and all the columns of X with fixed effects (if there is any).
+- *b.fix:*  vector of ones and zeros, same length as b0. Indicates if the effect associated to a column in Z is random (0) or fixed (1). Default is NULL, which takes only a random intercept and all the columns of Z with fixed effects (if there is any).
 
+The application of *saem_zibr* returns an object of the class *SAEM_ZIBR_result*, with print an plot methods.
 
+## References
+
+Chen, E.Z., Li, H.: A two-part mixed-effects model for analyzing longitudinal microbiome compositional data. 
+Bioinformatics 32(17), 2611–2617 (2016)
+
+Delyon, B., Lavielle, M., Moulines, E.: Convergence of a stochastic approximation version of
+the EM algorithm. Annals of Statistics, 94–128 (1999)
+
+Lewis, J.D., Chen, E.Z., Baldassano, R.N., Otley, A.R., Griffiths, A.M., Lee, D., Bittinger, K.,
+Bailey, A., Friedman, E.S., Hoffmann, C., et al.: Inflammation, antibiotics, and diet as environmental stressors of 
+the gut microbiome in pediatric Crohn’s disease. Cell Host & Microbe 18(4), 489–500 (2015)
+
+Romero, R., Hassan, S.S., Gajer, P., Tarca, A.L., Fadrosh, D.W., Nikita, L., Galuppi, M., Lamont, R.F., 
+Chaemsaithong, P., Miranda, J., et al.: The composition and stability of the vaginal microbiota of normal pregnant 
+women is different from that of non-pregnant women. Microbiome 2(1), 1–19 (2014)
 
