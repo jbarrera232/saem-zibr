@@ -22,6 +22,6 @@ $$\begin{split}
     \log{\left(\frac{u_{it}}{1-u_{it}}\right)}&=b_i+Z_{it}^T\beta,    
 \end{split}$$
 
-where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\hspace*{5mm}b_i\leadsto N(b,\sigma^2_2).$$
+where $a_i$ and $b_i$ are individual specific intercepts, $\alpha$ and $\beta$ are vectors of regression coefficients and $X_{it}$ and $Z_{it}$ are covariates for each individual and time point. We further consider that $$a_i\leadsto N(a,\sigma^2_1),\hspace*{0.5cm}b_i\leadsto N(b,\sigma^2_2).$$
 
 
