@@ -88,6 +88,76 @@ llis.zibr<-function(MU,G,V,yobs,idg0,ideq0,xcov,zcov,nxcov,nzcov,id,psi.mean,psi
   return(ll)
 }
 
+# zibr.grad: calculates the gradient of the likelihood function of the ZIBR model
+
+zibr.grad<-function(MU,G,V,psi.cad,ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
+                   xcovM,id2,idg0M,ideq0M,nxcov,nzcov,zcovM,yobsM,nal.a,nal.b)
+{
+  G_diag<-diagJB(G)
+  N<-dim(psi.cad)[1]
+  A<-MU[1:nxcov]
+  B<-MU[nxcov+(1:nzcov)]
+  S<-colSums(psi.cad[,ind.psi.aleat])
+  S2<-colSums(psi.cad[,ind.psi.aleat]^2)
+
+  mu_g<-rep(0,length(MU))
+  mu_g[ind.psi.aleat]<-(S-N*MU[ind.psi.aleat])/G_diag
+  G_g<-0.5*((S2-2*MU[ind.psi.aleat]*S+N*(MU[ind.psi.aleat]^2))/G_diag^2-N/G_diag)
+
+  if(nal.a!=nxcov)
+  {
+    A_g<-(-1)*grad(func_a,A[-ind.a.aleat],psi.cad=psi.cad,ind.a.aleat=ind.a.aleat,xcovM=xcovM,id2=id2,idg0M=idg0M,ideq0M=ideq0M,
+              nxcov=nxcov,nzcov=nzcov)
+  }
+  if(nal.b!=nzcov) paru<-c(B[-ind.b.aleat],V)
+  else paru<-V
+
+  paru_g<-(-1)*grad(func_b,paru,psi.cad=psi.cad,ind.b.aleat=ind.b.aleat,zcovM=zcovM,id2=id2,idg0M=idg0M,yobsM=yobsM,
+                   nxcov=nxcov,nzcov=nzcov,nal.b=nal.b)
+  V_g<-paru_g[length(paru)]
+
+  if(nal.b!=nzcov) B_g<-paru_g[-length(paru)]
+  if (naleat!=(nxcov+nzcov)) mu_g[-ind.psi.aleat]<-c(A_g,B_g)
+  g<-c(mu_g,V_g,G_g)
+  return(g)
+}
+
+# zibr.hess: calculates the hessian of the likelihood function of the ZIBR model
+
+zibr.hess<-function(MU,G,V,psi.cad,ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
+                      xcovM,id2,idg0M,ideq0M,nxcov,nzcov,zcovM,yobsM,nal.a,nal.b)
+{
+  G_diag<-diagJB(G)
+  N<-dim(psi.cad)[1]
+  A<-MU[1:nxcov]
+  B<-MU[nxcov+(1:nzcov)]
+  S<-colSums(psi.cad[,ind.psi.aleat])
+  S2<-colSums(psi.cad[,ind.psi.aleat]^2)
+  nhess<-nxcov+nzcov+naleat+1
+  H<-matrix(0,ncol=nhess,nrow=nhess)
+
+  diag(H)[ind.psi.aleat]<- -N/G_diag
+  diag(H)[(nhess-naleat+1):nhess]<-(1/G_diag^2)*(0.5*N-(S2-2*MU[ind.psi.aleat]*S+N*(MU[ind.psi.aleat])^2)/G_diag)
+  diag(H[ind.psi.aleat,(nhess-naleat+1):nhess])<-(-1/G_diag^2)*(S-N*MU[ind.psi.aleat])
+  diag(H[(nhess-naleat+1):nhess,ind.psi.aleat])<-(-1/G_diag^2)*(S-N*MU[ind.psi.aleat])
+
+  if(nal.a!=nxcov)
+  {
+    A_h<-(-1)*hessian(func_a,A[-ind.a.aleat],psi.cad=psi.cad,ind.a.aleat=ind.a.aleat,xcovM=xcovM,id2=id2,idg0M=idg0M,ideq0M=ideq0M,
+                       nxcov=nxcov,nzcov=nzcov)
+    indx1<-setdiff(1:nxcov,ind.a.aleat)
+    H[indx1,indx1]<-A_h
+  }
+  if(nal.b!=nzcov) paru<-c(B[-ind.b.aleat],V)
+  else paru<-V
+  paru_h<-(-1)*hessian(func_b,paru,psi.cad=psi.cad,ind.b.aleat=ind.b.aleat,zcovM=zcovM,id2=id2,idg0M=idg0M,yobsM=yobsM,
+                        nxcov=nxcov,nzcov=nzcov,nal.b=nal.b)
+  indx2<-setdiff(1:(nzcov+1),ind.b.aleat)+nxcov
+  H[indx2,indx2]<-paru_h
+  return(H)
+}
+
+            
 ##                             MAIN FUNCTION
 # saem_zibr: estimate the parameters of the ZIBR model with the SAEM algorithm
 
@@ -95,6 +165,7 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
 {
   require(MASS)
   require(boot)
+  require(numDeriv)
   set.seed(seed)
   
   Stk<-floor(0.75*iter)
@@ -103,8 +174,8 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
   # Initialization
   
   yobs<-Y
-  nind<-length(unique(id))
-  ntot<-length(id)
+  nind<-length(unique(index))
+  ntot<-length(index)
   xcov<-cbind(rep(1,ntot),X)
   zcov<-cbind(rep(1,ntot),Z)
   nxcov<-ncol(xcov)
@@ -152,6 +223,11 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
   SD1[SD1<0.5&SD1>0]<-0.5
   SD2<-SD1
 
+  Gk<-rep(0,npsi+naleat+1)
+  Dk<-matrix(0,ncol=npsi+naleat+1,nrow=npsi+naleat+1)
+  Tk<-matrix(0,ncol=npsi+naleat+1,nrow=npsi+naleat+1)
+  Hk<-matrix(0,ncol=npsi+naleat+1,nrow=npsi+naleat+1)
+  
   psik<-apply(PSI_CAD,2,function(x){tapply(x,rep(1:nind,ncad),mean)})
   Epsik2<-apply(PSI_CAD^2,2,function(x){tapply(x,rep(1:nind,ncad),mean)})
   Sk1<-nind*MU
@@ -243,31 +319,49 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
      Gfull<-Sk2/nind-(Sk1%*%t(Sk1))/(nind^2)
      G<-as.matrix(Gfull[ind.psi.aleat,ind.psi.aleat])
      
-       A<-MU[1:nxcov]
-       B<-MU[nxcov+(1:nzcov)]
+     A<-MU[1:nxcov]
+     B<-MU[nxcov+(1:nzcov)]
        
-       if(nal.a!=nxcov)
-       {
-         ak<-nlminb(start=A[-ind.a.aleat],objective=func_a,psi.cad=PSI_CAD,ind.a.aleat=ind.a.aleat,xcovM=xcovM,id2=id2,idg0M=idg0M,ideq0M=ideq0M,
+     if(nal.a!=nxcov)
+     {
+       ak<-nlminb(start=A[-ind.a.aleat],objective=func_a,psi.cad=PSI_CAD,ind.a.aleat=ind.a.aleat,xcovM=xcovM,id2=id2,idg0M=idg0M,ideq0M=ideq0M,
                    nxcov=nxcov,nzcov=nzcov)$par
-         A[-ind.a.aleat]<-A[-ind.a.aleat]+gam*(ak-A[-ind.a.aleat])
-       }
+       A[-ind.a.aleat]<-A[-ind.a.aleat]+gam*(ak-A[-ind.a.aleat])
+     }
        
-       if(nal.b!=nzcov) paru<-c(B[-ind.b.aleat],V)
-       else paru<-V
+     if(nal.b!=nzcov) paru<-c(B[-ind.b.aleat],V)
+     else paru<-V
        
-       paruk<-nlminb(start=paru,objective=func_b,psi.cad=PSI_CAD,ind.b.aleat=ind.b.aleat,zcovM=zcovM,id2=id2,idg0M=idg0M,yobsM=yobsM,
+     paruk<-nlminb(start=paru,objective=func_b,psi.cad=PSI_CAD,ind.b.aleat=ind.b.aleat,zcovM=zcovM,id2=id2,idg0M=idg0M,yobsM=yobsM,
                     nxcov=nxcov,nzcov=nzcov,nal.b=nal.b,lower=c(rep(-Inf,length(paru)-1),0.0001))$par
-       paru<-paru+gam*(paruk-paru)
+     paru<-paru+gam*(paruk-paru)
        
-       V<-paru[length(paru)]
-       if(nal.b!=nzcov) B[-ind.b.aleat]<-paru[-length(paru)]
+     V<-paru[length(paru)]
+     if(nal.b!=nzcov) B[-ind.b.aleat]<-paru[-length(paru)]
        
-       MU<-c(A,B)
-       Gfull[,-ind.psi.aleat]<-0
-       Gfull[-ind.psi.aleat,]<-0
+     MU<-c(A,B)
+     Gfull[,-ind.psi.aleat]<-0
+     Gfull[-ind.psi.aleat,]<-0
        
-       PSI_CAD[,-ind.psi.aleat]<-matrix(rep(MU[-ind.psi.aleat],each=ncad*nind),ncol=npsi-naleat,nrow=ncad*nind)
+     PSI_CAD[,-ind.psi.aleat]<-matrix(rep(MU[-ind.psi.aleat],each=ncad*nind),ncol=npsi-naleat,nrow=ncad*nind)
+
+     ZGk<-zibr.grad(MU,G,V,PSI_CAD,ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
+                      xcovM,id2,idg0M,ideq0M,nxcov,nzcov,zcovM,yobsM,nal.a,nal.b)
+     ZHk<-zibr.hess(MU,G,V,PSI_CAD,ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
+                      xcovM,id2,idg0M,ideq0M,nxcov,nzcov,zcovM,yobsM,nal.a,nal.b)
+     ZTk<-matrix(0,ncol=npsi+naleat+1,nrow=npsi+naleat+1)
+     for(cont in 1:ncad)
+     {
+       id3<-nind*(cont-1)+(1:nind)
+       g2<-zibr.grad(MU,G,V,PSI_CAD[id3,],ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
+                       xcov,id,idg0,ideq0,nxcov,nzcov,zcov,yobs,nal.a,nal.b)
+       ZTk<-ZTk+g2%*%t(g2)
+     }
+       
+     Gk<-Gk+gam*(ZGk-Gk)
+     Dk<-Dk+gam*(ZHk-Dk)
+     Tk<-Tk+gam*(ZTk-Tk)
+     Hk<-(1/ncad)*(Dk+Tk)-(1/ncad^2)*(Gk%*%t(Gk))
    }  
    
    graph_str<-rbind(graph_str,c(MU,diag(G),V))
@@ -285,7 +379,8 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
   loglik.is<-llis.zibr(MU,G,V,yobs,idg0,ideq0,xcov,zcov,nxcov,nzcov,id,psi.mean,psi.var,ind.psi.aleat,naleat,niter=500)
   
   l<-list(MU=MU,G=G,V=V,psi.mean=psi.mean,psi.var=psi.var,loglik=loglik.is,
-          graph=graph_str,labs.X=labs.X,labs.Z=labs.Z,nxcov=nxcov,nzcov=nzcov,ind.a.aleat=ind.a.aleat,ind.b.aleat=ind.b.aleat)
+          graph=graph_str,labs.X=labs.X,labs.Z=labs.Z,nxcov=nxcov,nzcov=nzcov,ind.a.aleat=ind.a.aleat,ind.b.aleat=ind.b.aleat,
+          FIM.stoch=Hk,var.stoch=diag(solve(-Hk)))
   class(l)<-c("list","SAEM_ZIBR_result")
     
   return(l)
@@ -325,28 +420,33 @@ print.SAEM_ZIBR_result<-function(l)
   nb.al<-sum(ind.b.aleat)
   labs.X<-l$labs.X
   labs.Z<-l$labs.Z
+  var.stoch<-l$var.stoch
   
-  mlog<-data.frame(Estimate=A,Type=ifelse(ind.a.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
+  mlog<-data.frame(Estimate=A,"Std.Error"=0,"p.value"=0,Type=ifelse(ind.a.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
                    row.names = labs.X)
+  suppressWarnings({mlog[,"Std.Error"]=ifelse(var.stoch[1:nxcov]>0,sqrt(var.stoch[1:nxcov]),NA)}) 
+  mlog[,"p.value"]=ifelse(var.stoch[1:nxcov]>0,pchisq((A^2)/var.stoch[1:nxcov],1,lower.tail=F),NA)
   mlog[ind.a.aleat,"Variance"]=Varest[1:na.al]
-  mlog[,4]=sqrt(mlog$Variance)
-  mbeta<-data.frame(Estimate=B,Type=ifelse(ind.b.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
+  mlog[,6]=sqrt(mlog$Variance)
+  mbeta<-data.frame(Estimate=B,"Std.Error"=0,"p.value"=0,Type=ifelse(ind.b.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
                     row.names = labs.Z)
+  suppressWarnings({mbeta[,"Std.Error"]=ifelse(var.stoch[nxcov+(1:nzcov)]>0,sqrt(var.stoch[nxcov+(1:nzcov)]),NA)}) 
+  mbeta[,"p.value"]=ifelse(var.stoch[nxcov+(1:nzcov)]>0,pchisq((B^2)/var.stoch[nxcov+(1:nzcov)],1,lower.tail=F),NA)
   mbeta[ind.b.aleat,"Variance"]=Varest[na.al+(1:nb.al)]
-  mbeta[,4]=sqrt(mbeta$Variance)
+  mbeta[,6]=sqrt(mbeta$Variance)
   
   cat("===== ESTIMATION RESULTS SAEM-ZIBR =====",'\n')
   cat("== Logistic part ==",'\n')
-  print(mlog[,1:2])
+  print(mlog[,1:4])
   cat("== Beta part ==",'\n')
-  print(mbeta[,1:2])
+  print(mbeta[,1:4])
   cat("=== Variance of random effects ===",'\n')
   cat("== Logistic part ==",'\n')
-  print(mlog[ind.a.aleat,3:4])
+  print(mlog[ind.a.aleat,5:6])
   cat("== Beta part ==",'\n')
-  print(mbeta[ind.b.aleat,3:4])
+  print(mbeta[ind.b.aleat,5:6])
   cat("=== Phi estimate (beta part): ",l$V,'\n')
-  cat("=== Log-likelihood (importance sampling): ",l$loglik)
+  cat("=== Log-likelihood (importance sampling): ",l$loglik,'\n')
   return()
 }
 
