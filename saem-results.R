@@ -5,6 +5,39 @@ library(tibble)
 library(nlme)
 library(NBZIMM)
 
+sessionInfo()
+#R version 4.4.0 (2024-04-24 ucrt)
+#Platform: x86_64-w64-mingw32/x64
+#Running under: Windows 11 x64 (build 22631)
+
+#Matrix products: default
+
+#locale:
+#[1] LC_COLLATE=Spanish_Ecuador.utf8  LC_CTYPE=Spanish_Ecuador.utf8    LC_MONETARY=Spanish_Ecuador.utf8 LC_NUMERIC=C                    
+#[5] LC_TIME=Spanish_Ecuador.utf8    
+
+#time zone: America/Santiago
+#tzcode source: internal
+
+#attached base packages:
+#[1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+#other attached packages:
+# [1] gtsummary_2.0.2     lubridate_1.9.3     forcats_1.0.0       stringr_1.5.1       purrr_1.0.2         readr_2.1.5         tidyr_1.3.1        
+# [8] ggplot2_3.5.1       tidyverse_2.0.0     nlme_3.1-164        numDeriv_2016.8-1.1 boot_1.3-30         MASS_7.3-60.2       patchwork_1.2.0    
+#[15] tibble_3.2.1        dplyr_1.1.4         magrittr_2.0.3      ZIBR_1.0.2          statmod_1.5.0       saemix_3.3          npde_3.5           
+#[22] lme4_1.1-35.3       Matrix_1.7-0       
+
+#loaded via a namespace (and not attached):
+# [1] gtable_0.3.5        xfun_0.47           lattice_0.22-6      tzdb_0.4.0          vctrs_0.6.5         tools_4.4.0         generics_0.1.3     
+# [8] fansi_1.0.6         pkgconfig_2.0.3     RColorBrewer_1.1-3  gt_0.11.0           readxl_1.4.3        lifecycle_1.0.4     farver_2.1.2       
+#[15] compiler_4.4.0      munsell_0.5.1       sass_0.4.9          htmltools_0.5.8.1   yaml_2.3.8          pillar_1.9.0        nloptr_2.0.3       
+#[22] crayon_1.5.3        mclust_6.1.1        commonmark_1.9.1    tidyselect_1.2.1    digest_0.6.35       stringi_1.8.3       labeling_0.4.3     
+#[29] splines_4.4.0       fastmap_1.1.1       grid_4.4.0          colorspace_2.1-0    cli_3.6.2           cards_0.2.2         utf8_1.2.4         
+#[36] withr_3.0.1         scales_1.3.0        timechange_0.3.0    rmarkdown_2.28      igraph_2.0.3        gridExtra_2.3       cellranger_1.1.0   
+#[43] hms_1.1.3           evaluate_0.24.0     knitr_1.48          markdown_1.13       rlang_1.1.3         Rcpp_1.0.12         glue_1.7.0         
+#[50] xaringanExtra_0.8.0 xml2_1.3.6          pkgload_1.4.0       rstudioapi_0.16.0   minqa_1.2.6         R6_2.5.1            fs_1.6.4           
+
 #### Part 1: IBD data (Lee et al., 2015) ####
 
 ### Load the raw data
@@ -127,17 +160,19 @@ for (spe in spe.all){
     X.2=Z.2=X[,-2]
     X.3=Z.3=X[,-3]
     
-    mod0<-saem_zibr(Y,X,Z,id,est$beta_v_est,est$logistic_est_table[,1],est$beta_est_table[,1],
-                    232,500,5)
-    mod1<-saem_zibr(Y,X.1,Z.1,id,est$beta_v_est,est$logistic_est_table[-2,1],est$beta_est_table[-2,1],
-                    232,500,5)
-    mod2<-saem_zibr(Y,X.2,Z.2,id,est$beta_v_est,est$logistic_est_table[-3,1],est$beta_est_table[-3,1],
-                    232,500,5)
-    mod3<-saem_zibr(Y,X.3,Z.3,id,est$beta_v_est,est$logistic_est_table[-4,1],est$beta_est_table[-4,1],
-                    232,500,5)
+   mod0<-saem_zibr(Y,X,Z,subject.ind,est$beta_v_est,est$logistic_est_table[,1],est$beta_est_table[,1],
+                    86,500,5)
+    mod1<-saem_zibr(Y,X.1,Z.1,subject.ind,est$beta_v_est,est$logistic_est_table[-2,1],est$beta_est_table[-2,1],
+                    86,500,5)
+    mod2<-saem_zibr(Y,X.2,Z.2,subject.ind,est$beta_v_est,est$logistic_est_table[-3,1],est$beta_est_table[-3,1],
+                    86,500,5)
+    mod3<-saem_zibr(Y,X.3,Z.3,subject.ind,est$beta_v_est,est$logistic_est_table[-4,1],est$beta_est_table[-4,1],
+                    86,500,5)
     
     sls<- -2*c(mod1$loglik,mod2$loglik,mod3$loglik)+2*mod0$loglik
-    p.species.list.saem[[spe]]<-pchisq(sls,2,lower.tail = F)
+    p<-pchisq(sls,2,lower.tail = F)
+    
+    p.species.list.saem[[spe]] <- p
     mod.species.list.saem[[spe]] <- mod0
   }
   #break
@@ -173,100 +208,143 @@ p.species.zibr <- t(as.data.frame(p.species.list.zibr))
 p.species.zibr.adj <-
   rownames_to_column(as.data.frame(p.species.zibr),var = 'Species') %>% 
   mutate(across(-Species,~p.adjust(.x,"fdr"))) %>%
-  mutate(Detection=ifelse(Treat<0.05,"Sí","No"))
+  mutate(Detection=ifelse(Treat<0.05,"Yes","No"))
 
 p.species.saem <- t(as.data.frame(p.species.list.saem))
-#p.species.saem[1,]<- 1-coef.mat[,2]
 p.species.saem.adj <-
   rownames_to_column(as.data.frame(p.species.saem),var = 'Species') %>% 
   mutate(across(-Species,~p.adjust(.x,"fdr"))) %>%
-  mutate(Detection=ifelse(Treat<0.05,"Sí","No"))
+  mutate(Detección=ifelse(Treat<0.05,"Yes","No"))
 
 #### Part 2: Vaginal microbiome data (Romero et al., 2014) ####
 
 data(Romero)
+
+## Cleaning covariate data
 
 data1<-Romero$SampleData %>% 
   filter(complete.cases(Age))%>%
   mutate(ID=as.numeric(factor(Subect_ID, levels=unique(Subect_ID))),
          AGE_SC=scale(Age,center=min(Age),scale=(max(Age)-min(Age))))%>%
   mutate(Month=ifelse(pregnant == 1, 7*GA_Days/30, GA_Days/30),
-         Mon_Preg=Month*pregnant)%>%
-  dplyr::select(Subect_ID,ID,Month,pregnant,AGE_SC,Mon_Preg,Total.Read.Counts)
+         Time=scale(Month,center=min(Month),scale=(max(Month)-min(Month))),
+         Time_Preg=Time*pregnant)%>%
+  dplyr::select(Subect_ID,ID,Time,pregnant,AGE_SC,Time_Preg,Total.Read.Counts,Month)
+
+# Preparing compositional microbiome data
 
 data2<-Romero$OTU%>%
   filter(complete.cases(Romero$SampleData$Age))%>%
   mutate_all(function(x) x/data1$Total.Read.Counts)%>%
   dplyr::select(where(function(x) sum(x==0)/length(x)>=0.1 & sum(x==0)/length(x)<=0.9))
 
-taxa.zibr<-colnames(data2)
+# Discading bacteria taxa that are not present in both pregnant and non-pregnant women
+                      
+taxa.out<-c(31,49,50,60)
+taxa.def<-setdiff(1:61,taxa.out)
 
-## Model 1: Pregnancy and interaction time*pregnancy
-# Pregnancy effect
-
-X.tx=Z.tx=data1[,c(3:6)]
-X.tx1=Z.tx1=data1[,c(3,5:6)]
-id.tx=data1$ID
-res2_saem=rep(0,length(taxa.zibr))
-
-for(i in 1:length(taxa.zibr))
-{
-  Y.tx=data2[,i]
-  mod0=saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(5,-0.5,0.5),runif(5,-0.5,0.5),
-                 232,500,4)
-  mod1=saem_zibr(Y.tx,X.tx1,Z.tx1,id.tx,runif(1,10,20),runif(4,-0.5,0.5),runif(4,-0.5,0.5),
-                 232,500,4)
-  
-  tst<- -2*mod1$loglik+2*mod0$loglik
-  pval<- pchisq(tst,2,lower.tail = F)
-  res2_saem[i]<-pval
-}
-
-## Time*pregnancy effect
-
-X.tx1=Z.tx1=data1[,c(3:5)]
-res3_saem=rep(0,length(taxa.zibr))
-
-for(i in 1:length(taxa.zibr))
-{
-  Y.tx=data2[,i]
-  mod0=saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(5,-0.5,0.5),runif(5,-0.5,0.5),
-                 232,500,4)
-  mod1=saem_zibr(Y.tx,X.tx1,Z.tx1,id.tx,runif(1,10,20),runif(4,-0.5,0.5),runif(4,-0.5,0.5),
-                 232,500,4)
-  
-  tst<- -2*mod1$loglik+2*mod0$loglik
-  pval<- pchisq(tst,2,lower.tail = F)
-  res3_saem[i]<-pval
-}
-
-## Model 2: Only pregnancy
+## Model 1: Age, time, pregnancy
+# Full model
 
 X.tx=Z.tx=data1[,c(3:5)]
-X.tx1=Z.tx1=data1[,c(3,5)]
-res4_saem=rep(0,length(taxa.zibr))
+id.tx<-data1$ID
 
-for(i in 1:length(taxa.zibr))
+MOD1_0<-list()
+ 
+for(tax in taxa.def)
 {
-  Y.tx=data2[,i]
-  mod0=saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(4,-0.5,0.5),runif(4,-0.5,0.5),
-                 232,500,4)
-  mod1=saem_zibr(Y.tx,X.tx1,Z.tx1,id.tx,runif(1,10,20),runif(3,-0.5,0.5),runif(3,-0.5,0.5),
-                 232,500,4)
-  
-  tst<- -2*mod1$loglik+2*mod0$loglik
-  pval<- pchisq(tst,2,lower.tail = F)
-  res4_saem[i]<-pval
+  set.seed(232)
+  Y.tx=data2[,tax]
+  nc=ncol(X.tx)
+  mod0=try(saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(nc+1,-0.5,0.5),runif(nc+1,-0.5,0.5),
+                 232,500,5))  
+  MOD1_0[[tax]]<-mod0    
 }
 
-## Results
+# Model without pregnancy
 
-p.species.adj2<-data.frame(Species=taxa.zibr,
-                           Pregnancy=res2_saem,
-                           Preg.Time=res3_saem,
-                           Pregnancy2=res4_saem) %>% 
-  mutate(Detec1=ifelse(Pregnancy<0.05,T,F),
-         Detec2=ifelse(Preg.Time<0.05,T,F),
-         Detec3=ifelse(Pregnancy2<0.05,T,F))
+X.tx=Z.tx=data1[,c(3,5)]
 
-colMeans(p.species.adj2[,5:7])
+MOD1_1<-list()
+
+for(tax in taxa.def)
+{
+  set.seed(232)
+  Y.tx=data2[,tax]
+  nc=ncol(X.tx)
+  mod0=try(saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(nc+1,-0.5,0.5),runif(nc+1,-0.5,0.5),
+                     232,500,5))
+  MOD1_1[[tax]]<-mod0
+}
+
+## Model 2: age, time, pregnancy, interaction
+
+# Full model
+
+X.tx=Z.tx=data1[,c(3:6)]
+
+MOD2_0<-list()
+
+for(tax in taxa.def)
+{
+  set.seed(232)
+  Y.tx=data2[,tax]
+  nc=ncol(X.tx)
+  mod0=try(saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(nc+1,-0.5,0.5),runif(nc+1,-0.5,0.5),
+                     232,500,5))
+  MOD2_0[[tax]]<-mod0
+}
+
+# Model without pregnancy
+
+X.tx=Z.tx=data1[,c(3,5:6)]
+                      
+MOD2_1<-list()
+
+for(tax in taxa.def)
+{
+  set.seed(232)
+  Y.tx=data2[,tax]
+  nc=ncol(X.tx)
+  mod0=try(saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(nc+1,-0.5,0.5),runif(nc+1,-0.5,0.5),
+                     232,500,5))
+  MOD2_1[[tax]]<-mod0
+}
+
+# Model without interaction
+
+X.tx=Z.tx=data1[,3:5]
+
+MOD2_2<-list()
+                      
+for(tax in taxa.def)
+{
+  set.seed(232)
+  Y.tx=data2[,tax]
+  nc=ncol(X.tx)
+  mod0=try(saem_zibr(Y.tx,X.tx,Z.tx,id.tx,runif(1,10,20),runif(nc+1,-0.5,0.5),runif(nc+1,-0.5,0.5),
+                     232,500,5))
+  MOD2_2[[tax]]<-mod0
+}
+
+## Resultas
+
+res1<-sapply(MOD1_0,function(x) x$loglik)
+res2<-sapply(MOD1_1,function(x) x$loglik)
+res3<-sapply(MOD2_0,function(x) x$loglik)
+res4<-sapply(MOD2_1,function(x) x$loglik)
+res5<-sapply(MOD2_2,function(x) x$loglik)
+
+p.species.romero<-data.frame(Species=taxa.zibr[taxa.def],
+                             LLMOD1=res1,
+                             LLMOD1_1=res2,
+                             LLMOD2=res3,
+                             LLMOD2_1=res4,
+                             LLMOD2_2=res5) %>% 
+  #mutate(across(-Species,~p.adjust(.x,"fdr"))) %>% 
+  mutate(pval_Preg1=pchisq(2*(LLMOD1-LLMOD1_1),2,lower.tail=F),
+         pval_Preg2=pchisq(2*(LLMOD2-LLMOD2_1),2,lower.tail=F),
+         pval_Inter=pchisq(2*(LLMOD2-LLMOD2_2),2,lower.tail=F)) %>% 
+  mutate(Detec_Preg1=ifelse(pval_Preg1<0.05,T,F),
+         Detec_Preg2=ifelse(pval_Preg2<0.05,T,F),
+         Detec_Inter=ifelse(pval_Inter<0.05,T,F))  
