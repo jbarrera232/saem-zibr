@@ -161,6 +161,19 @@ zibr.hess<-function(MU,G,V,psi.cad,ind.psi.aleat,ind.a.aleat,ind.b.aleat,naleat,
 ##                             MAIN FUNCTION
 # saem_zibr: estimate the parameters of the ZIBR model with the SAEM algorithm
 
+# The result is an object with class SAEM_ZIBR_result, with the following elements:
+# - MU: contains the mean of random effects and the fixed effects. It is a vector whose first components are associated 
+#   with the covariates of the logit part and the remaining ones with those of the beta part.
+# - G: a matrix whose diagonal contains the estimators of the variances of the random effects, according to the same order followed in MU.
+# - V: the dispersion parameter for the beta part of the model.
+# - psi.mean: a matrix containing estimates of the conditional expectation of the random effects. 
+#   Required for calculating the log-likelihood using Importance Sampling.
+# - psi.var: a matrix containing estimates of the conditional variance of the random effects. 
+#   Required for calculating the log-likelihood using Importance Sampling.
+# - FIM.stoch: a matrix that contains the stochastic approximation of the Fisher information matrix.
+# - var.stoch: a vector containing the diagonal of the covariance matrix of the parameter estimates. Its square root
+#   can be used to estimate the standard errors of the estimates.
+            
 saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b.fix=NULL)
 {
   require(MASS)
@@ -391,20 +404,26 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
 plot.SAEM_ZIBR_result<-function(l)
 {
   graph_str<-l$graph
+  ind.a.aleat<-l$ind.a.aleat
+  ind.b.aleat<-l$ind.b.aleat
   iter<-nrow(graph_str)
   Stk<-floor(0.75*iter)
   g1<-ncol(graph_str)
+  l1<-paste(l$labs.X,rep("(logit part)",length(l$labs.X)))
+  l2<-paste(l$labs.Z,rep("(beta part)",length(l$labs.Z)))
+  s1<-paste(rep("Var",sum(ind.a.aleat)),l1[ind.a.aleat],sep=" - ")
+  s2<-paste(rep("Var",sum(ind.b.aleat)),l2[ind.b.aleat],sep=" - ")
+  maingraph<-c(l1,l2,s1,s2,"Phi")
   g2<-ceiling(g1/3)
   
   par(mfrow=c(g2,3))
   for(i in 1:g1)
   {
-    plot(1:iter,graph_str[,i],xlab=colnames(graph_str)[i],ylab="Value",type="l")
+    plot(1:iter,graph_str[,i],main=maingraph[i],xlab="Iteration",ylab="Value",type="l")
     abline(v=Stk)
   }
   par(mfrow=c(1,1))
 }
-
 ## print.SAEM_ZIBR: print method
 
 print.SAEM_ZIBR_result<-function(l)
@@ -420,31 +439,26 @@ print.SAEM_ZIBR_result<-function(l)
   nb.al<-sum(ind.b.aleat)
   labs.X<-l$labs.X
   labs.Z<-l$labs.Z
-  var.stoch<-l$var.stoch
-  
-  mlog<-data.frame(Estimate=A,"Std.Error"=0,"p.value"=0,Type=ifelse(ind.a.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
+
+  mlog<-data.frame(Estimate=A,Type=ifelse(ind.a.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
                    row.names = labs.X)
-  suppressWarnings({mlog[,"Std.Error"]=ifelse(var.stoch[1:nxcov]>0,sqrt(var.stoch[1:nxcov]),NA)}) 
-  mlog[,"p.value"]=ifelse(var.stoch[1:nxcov]>0,pchisq((A^2)/var.stoch[1:nxcov],1,lower.tail=F),NA)
   mlog[ind.a.aleat,"Variance"]=Varest[1:na.al]
-  mlog[,6]=sqrt(mlog$Variance)
-  mbeta<-data.frame(Estimate=B,"Std.Error"=0,"p.value"=0,Type=ifelse(ind.b.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
+  mlog[,4]=sqrt(mlog$Variance)
+  mbeta<-data.frame(Estimate=B,Type=ifelse(ind.b.aleat,"Random","Fixed"),Variance=0,"sqrt(Var)"=0,
                     row.names = labs.Z)
-  suppressWarnings({mbeta[,"Std.Error"]=ifelse(var.stoch[nxcov+(1:nzcov)]>0,sqrt(var.stoch[nxcov+(1:nzcov)]),NA)}) 
-  mbeta[,"p.value"]=ifelse(var.stoch[nxcov+(1:nzcov)]>0,pchisq((B^2)/var.stoch[nxcov+(1:nzcov)],1,lower.tail=F),NA)
   mbeta[ind.b.aleat,"Variance"]=Varest[na.al+(1:nb.al)]
-  mbeta[,6]=sqrt(mbeta$Variance)
+  mbeta[,4]=sqrt(mbeta$Variance)
   
   cat("===== ESTIMATION RESULTS SAEM-ZIBR =====",'\n')
   cat("== Logistic part ==",'\n')
-  print(mlog[,1:4])
+  print(mlog[,1:2])
   cat("== Beta part ==",'\n')
-  print(mbeta[,1:4])
+  print(mbeta[,1:2])
   cat("=== Variance of random effects ===",'\n')
   cat("== Logistic part ==",'\n')
-  print(mlog[ind.a.aleat,5:6])
+  print(mlog[ind.a.aleat,3:4])
   cat("== Beta part ==",'\n')
-  print(mbeta[ind.b.aleat,5:6])
+  print(mbeta[ind.b.aleat,3:4])
   cat("=== Phi estimate (beta part): ",l$V,'\n')
   cat("=== Log-likelihood (importance sampling): ",l$loglik,'\n')
   return()
