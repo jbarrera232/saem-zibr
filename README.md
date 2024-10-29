@@ -49,7 +49,7 @@ saem_zibr<-function(Y,X=NULL,Z=NULL,index,v0,a0,b0,seed,iter,ncad=5,a.fix=NULL,b
 -  *a.fix:*  vector of ones and zeros, same length as a0. Indicates if the effect associated to a column in X is random (0) or fixed (1). Default is NULL, which takes only a random intercept and all the columns of X with fixed effects (if there is any).
 - *b.fix:*  vector of ones and zeros, same length as b0. Indicates if the effect associated to a column in Z is random (0) or fixed (1). Default is NULL, which takes only a random intercept and all the columns of Z with fixed effects (if there is any).
 
-The application of *saem_zibr* returns an object of the class *SAEM_ZIBR_result*, with print an plot methods.
+The application of *saem_zibr* returns an object of the class *SAEM_ZIBR_result*, with print and plot methods.
 
 ## References
 
